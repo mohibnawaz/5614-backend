@@ -2,33 +2,27 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const session = require("express-session");
 const bcrypt = require("bcrypt");
 
 const connectToDatabase = require("../db");
-const {
-  User,
-  Training,
-  Question,
-  Reply,
-  Progress,
-  Time,
-} = require("../models");
+const { User, Training, Question, Reply, Progress, Time } = require("../models");
 
 connectToDatabase();
 
-server.use(cors({
-  origin: "*", // Allow all origins
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allow common methods
-  allowedHeaders: ["Content-Type", "Authorization"], // Allow headers typically used in APIs
-}));
-
 const server = express();
+
+// ✅ Proper CORS setup (allow all origins for now)
+server.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+server.options('*', cors()); // Preflight requests
+
 server.use(bodyParser.json());
-server.use(cors());
 
 server.post("/api/auth/google", async (req, res) => {
   const { username, email, googleId, age, gender } = req.body;
@@ -37,18 +31,9 @@ server.post("/api/auth/google", async (req, res) => {
   try {
     const existingUser = await User.findOne({ googleId });
     if (existingUser) {
-      return res.json({
-        message: "User already exists. Please Login",
-        user: existingUser,
-      });
+      return res.json({ message: "User already exists. Please Login", user: existingUser });
     }
-    const user = new User({
-      username,
-      email,
-      googleId,
-      age,
-      gender,
-    });
+    const user = new User({ username, email, googleId, age, gender });
     await user.save();
     res.json(user);
   } catch (error) {
@@ -68,17 +53,10 @@ server.post("/api/auth/signup", async (req, res) => {
     if (existingUser) {
       return res.json({ message: "User already exists" });
     }
-
     if (existingUserName) {
       return res.json({ message: "Username already exists" });
     }
-    const user = new User({
-      username,
-      email,
-      password: hashedPassword,
-      age,
-      gender,
-    });
+    const user = new User({ username, email, password: hashedPassword, age, gender });
     await user.save();
     res.json(user);
   } catch (error) {
@@ -111,16 +89,9 @@ server.post("/training", async (req, res) => {
   try {
     const existingTraining = await Training.findOne({ name });
     if (existingTraining) {
-      return res.json({
-        message: "Training already exists. Please Login",
-        training: existingTraining,
-      });
+      return res.json({ message: "Training already exists. Please Login", training: existingTraining });
     }
-    const training = new Training({
-      name,
-      age,
-      gender,
-    });
+    const training = new Training({ name, age, gender });
     await training.save();
     res.json(training);
   } catch (error) {
@@ -131,7 +102,6 @@ server.post("/training", async (req, res) => {
 server.post("/question", async (req, res) => {
   const { question } = req.body;
   console.log(req.body);
-
   try {
     const newQuestion = new Question({ question });
     await newQuestion.save();
@@ -145,7 +115,6 @@ server.post("/question", async (req, res) => {
 server.post("/reply", async (req, res) => {
   const { questionId, reply } = req.body;
   console.log(req.body);
-
   try {
     const newReply = new Reply({ questionId, reply });
     await newReply.save();
@@ -177,20 +146,16 @@ server.post("/progress", async (req, res) => {
 server.post("/time", async (req, res) => {
   const { userId, timeSpent, date } = req.body;
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Set the time to the start of the day to compare only the date part
+  today.setHours(0, 0, 0, 0);
 
   try {
-    // Find an existing record for the user for today
     let record = await Time.findOne({ userId, date: today });
 
     if (record) {
-      // If record exists, update the time spent
       record.timeSpent += timeSpent;
     } else {
-      // If no record exists, create a new record
       record = new Time({ userId, date: today, timeSpent });
     }
-
     await record.save();
     res.json(record);
   } catch (error) {
@@ -201,8 +166,6 @@ server.post("/time", async (req, res) => {
 
 server.get("/time/:userId", async (req, res) => {
   const { userId } = req.params;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Set the time to the start of the day to compare only the date part
   try {
     const records = await Time.find({ userId });
     res.json(records);
@@ -211,7 +174,7 @@ server.get("/time/:userId", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch time", error });
   }
 });
-// Get Progress
+
 server.get("/progress/:userId/:moduleName", async (req, res) => {
   const { userId, moduleName } = req.params;
   console.log(req.params);
@@ -236,9 +199,7 @@ server.get("/question", async (req, res) => {
 server.get("/reply/:questionId", async (req, res) => {
   const { questionId } = req.params;
   try {
-    const replies = await Reply.find({
-      questionId,
-    });
+    const replies = await Reply.find({ questionId });
     res.json(replies);
   } catch (error) {
     console.error(error);
