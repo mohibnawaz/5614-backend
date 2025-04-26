@@ -19,6 +19,13 @@ const {
 } = require("../models");
 
 connectToDatabase();
+
+server.use(cors({
+  origin: "*", // Allow all origins
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allow common methods
+  allowedHeaders: ["Content-Type", "Authorization"], // Allow headers typically used in APIs
+}));
+
 const server = express();
 server.use(bodyParser.json());
 server.use(cors());
