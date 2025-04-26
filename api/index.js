@@ -14,20 +14,21 @@ connectToDatabase();
 
 const server = express();
 
-// ✅ Proper CORS setup (allow all origins for now)
 server.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: "https://shieldgen.vercel.app",
+  credentials: true,
 }));
-server.options('*', cors()); // Preflight requests
 
+server.options('*', cors({
+  origin: "https://shieldgen.vercel.app",
+  credentials: true,
+}));
+
+server.use(express.json());
 server.use(bodyParser.json());
 
 server.post("/api/auth/google", async (req, res) => {
   const { username, email, googleId, age, gender } = req.body;
-  console.log(req.body);
-
   try {
     const existingUser = await User.findOne({ googleId });
     if (existingUser) {
@@ -43,13 +44,10 @@ server.post("/api/auth/google", async (req, res) => {
 
 server.post("/api/auth/signup", async (req, res) => {
   const { username, email, password, age, gender } = req.body;
-  console.log(req.body);
-
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const existingUser = await User.findOne({ email });
     const existingUserName = await User.findOne({ username });
-
     if (existingUser) {
       return res.json({ message: "User already exists" });
     }
@@ -60,14 +58,12 @@ server.post("/api/auth/signup", async (req, res) => {
     await user.save();
     res.json(user);
   } catch (error) {
-    console.log(error);
     res.json({ message: error });
   }
 });
 
 server.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
-  console.log(req.body);
   try {
     const user = await User.findOne({ email });
     if (!user) {
@@ -85,7 +81,6 @@ server.post("/api/auth/login", async (req, res) => {
 
 server.post("/training", async (req, res) => {
   const { name, age, gender } = req.body;
-  console.log(req.body);
   try {
     const existingTraining = await Training.findOne({ name });
     if (existingTraining) {
@@ -101,33 +96,28 @@ server.post("/training", async (req, res) => {
 
 server.post("/question", async (req, res) => {
   const { question } = req.body;
-  console.log(req.body);
   try {
     const newQuestion = new Question({ question });
     await newQuestion.save();
     res.json(newQuestion);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Failed to save question", error });
   }
 });
 
 server.post("/reply", async (req, res) => {
   const { questionId, reply } = req.body;
-  console.log(req.body);
   try {
     const newReply = new Reply({ questionId, reply });
     await newReply.save();
     res.json(newReply);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Failed to save reply", error });
   }
 });
 
 server.post("/progress", async (req, res) => {
   const { userId, moduleName, progress, total } = req.body;
-  console.log(req.body);
   try {
     let progressRecord = await Progress.findOne({ userId, moduleName });
     if (progressRecord) {
@@ -144,13 +134,11 @@ server.post("/progress", async (req, res) => {
 });
 
 server.post("/time", async (req, res) => {
-  const { userId, timeSpent, date } = req.body;
+  const { userId, timeSpent } = req.body;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   try {
     let record = await Time.findOne({ userId, date: today });
-
     if (record) {
       record.timeSpent += timeSpent;
     } else {
@@ -159,7 +147,6 @@ server.post("/time", async (req, res) => {
     await record.save();
     res.json(record);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Failed to save time", error });
   }
 });
@@ -170,14 +157,12 @@ server.get("/time/:userId", async (req, res) => {
     const records = await Time.find({ userId });
     res.json(records);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Failed to fetch time", error });
   }
 });
 
 server.get("/progress/:userId/:moduleName", async (req, res) => {
   const { userId, moduleName } = req.params;
-  console.log(req.params);
   try {
     const progress = await Progress.findOne({ userId, moduleName });
     res.json(progress);
@@ -191,7 +176,6 @@ server.get("/question", async (req, res) => {
     const questions = await Question.find();
     res.json(questions);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Failed to fetch questions", error });
   }
 });
@@ -202,7 +186,6 @@ server.get("/reply/:questionId", async (req, res) => {
     const replies = await Reply.find({ questionId });
     res.json(replies);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Failed to fetch replies", error });
   }
 });
